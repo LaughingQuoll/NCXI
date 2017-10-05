@@ -17,6 +17,11 @@
 @interface UIStatusBar : UIView
 @end
 
+@interface SpringBoard : UIApplication
+-(int)_frontMostAppOrientation;
+@end
+
+
 %hook SBNotificationCenterViewController
 %property (retain, nonatomic) NCXIViewController *notificationCenterViewController;
 -(void)viewDidLoad{
@@ -39,6 +44,19 @@
   _notificationCenterWithSearchViewController.notificationListViewController.view.tag = 1036;
   _notificationCenterWithSearchViewController.notificationListViewController.view.frame = CGRectMake(0,screenBounds.size.height/3, screenBounds.size.width, screenBounds.size.height - screenBounds.size.height/3);
   [self.notificationCenterViewController.notificationsPage addSubview:_notificationCenterWithSearchViewController.notificationListViewController.view];
+
+  SpringBoard *_springBoard = (SpringBoard *)[UIApplication sharedApplication];
+  if (UIInterfaceOrientationIsLandscape([_springBoard _frontMostAppOrientation])) {
+    self.notificationCenterViewController.dateView.view.frame = CGRectMake(screenBounds.size.height/12, screenBounds.size.width/10.5, screenBounds.size.height - (screenBounds.size.height/6),screenBounds.size.width/5);
+    self.notificationCenterViewController.contentScrollView.contentSize = CGSizeMake(screenBounds.size.height * 2, screenBounds.size.width);
+    self.notificationCenterViewController.widgetsPage.frame = CGRectMake(screenBounds.size.height/6,0,screenBounds.size.height - screenBounds.size.height/3,screenBounds.size.width);
+    self.notificationCenterViewController.notificationsPage.frame = CGRectMake(screenBounds.size.height,0,screenBounds.size.height,screenBounds.size.width);
+  } else {
+    self.notificationCenterViewController.dateView.view.frame = CGRectMake(screenBounds.size.width/12, screenBounds.size.height/10.5, screenBounds.size.width - (screenBounds.size.width/6),screenBounds.size.height/5);
+    self.notificationCenterViewController.contentScrollView.contentSize = CGSizeMake(screenBounds.size.width * 2, screenBounds.size.height);
+    self.notificationCenterViewController.widgetsPage.frame = CGRectMake(0,0,screenBounds.size.width,screenBounds.size.height - screenBounds.size.height/32);
+    self.notificationCenterViewController.notificationsPage.frame = CGRectMake(screenBounds.size.width,0,screenBounds.size.width,screenBounds.size.height - screenBounds.size.height/32);
+  }
 
   [self.notificationCenterViewController.widgetsViewController viewWillAppear:TRUE];
   [self.notificationCenterViewController.widgetsViewController viewDidAppear:TRUE];
@@ -81,7 +99,8 @@
   if(self.tag == 1036){
     CGRect screenBounds = [[UIScreen mainScreen] bounds];
     self.clipsToBounds = TRUE;
-    frame.origin.y = screenBounds.size.height/3.5;
+    frame.origin.y = screenBounds.size.height/3.25;
+    frame.size.height = screenBounds.size.height - screenBounds.size.height/3.25;
   }
   %orig(frame);
 }

@@ -1,6 +1,9 @@
 #import "NCXIViewController.h"
-
 #import <objc/runtime.h>
+
+@interface UIApplication (tweak)
+ -(id)_accessibilityFrontMostApplication;
+@end
 
 @interface UIView (Private)
 -(void)setAlignmentPercent:(CGFloat)arg1;
@@ -21,6 +24,16 @@
 @property (setter=_setDisplayedImage:,getter=_displayedImage,nonatomic,retain) UIImage * displayedImage;
 - (UIImage *)wallpaperImage;
 @end
+
+bool isOnSpringBoard() {
+  if ([[objc_getClass("UIApplication") sharedApplication] _accessibilityFrontMostApplication] != nil) {
+    return true;
+  }
+  else {
+    return false;
+  }
+}
+
 
 @implementation NCXIViewController
 static NCXIViewController *sharedInstance;
@@ -44,11 +57,23 @@ static NCXIViewController *sharedInstance;
 
   self.contentScrollView.delegate = self;
 
-  self.wallpaperView = [[UIImageView alloc] initWithFrame:self.view.bounds];
+  if (isOnSpringBoard()) {
+    CGRect newFrame = self.view.bounds;
+    newFrame.origin.y = self.view.bounds.size.height;
+    self.wallpaperView = [[UIImageView alloc] initWithFrame:newFrame];
+  }
+  else {
+  CGRect newFrame = self.view.bounds;
+  newFrame.origin.y = self.view.bounds.size.height/4;
+  self.wallpaperView = [[UIImageView alloc] initWithFrame:newFrame];
+  }
+
   [self.view addSubview:self.wallpaperView];
 
   SBFStaticWallpaperView *wallpaperView = [[objc_getClass("SBWallpaperController") sharedInstance] _wallpaperViewForVariant:0];
   self.wallpaperView.image = [wallpaperView.wallpaperImage copy];
+  self.wallpaperView.contentMode = UIViewContentModeScaleAspectFill;
+  self.wallpaperView.clipsToBounds = true;
 
   self.blurView = [[NCXIBlurView alloc] init];
   self.blurView.frame = self.view.bounds;
@@ -79,16 +104,49 @@ static NCXIViewController *sharedInstance;
 
   [self.view addSubview:self.contentScrollView];
 
+  [self.view setAutoresizingMask:UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight];
+  [self.blurView setAutoresizingMask:UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight];
+  [self.wallpaperView setAutoresizingMask:UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight];
+  [self.contentScrollView setAutoresizingMask:UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight];
+
   return self;
 }
 -(void)setProgress:(CGFloat)progress {
-  self.wallpaperView.alpha = 1 - (progress/2);
-  [self.blurView setProgress:progress];
+  // Credits to JakeAsJames for providing CALayer masking adjustments for backdrop blur.
+  CALayer *maskLayer = [CALayer layer];
+  maskLayer.backgroundColor = [UIColor blackColor].CGColor;
+  CGRect maskFrame = self.wallpaperView.frame;
+  CGRect newFrame = self.wallpaperView.frame;
+
+  if (isOnSpringBoard()) {
+    maskFrame.origin.y = ((1 - progress) * self.wallpaperView.frame.size.height) - self.wallpaperView.frame.size.height;
+    maskLayer.frame = maskFrame;
+    self.wallpaperView.layer.mask = maskLayer;
+    self.wallpaperView.alpha = (1 - progress)*1.15;
+
+    newFrame.origin.y = progress * self.wallpaperView.frame.size.height;
+  } else {
+    maskFrame.origin.y = ((1 - progress) * self.wallpaperView.frame.size.height/4) - self.wallpaperView.frame.size.height/4;
+    maskLayer.frame = maskFrame;
+    self.wallpaperView.layer.mask = maskLayer;
+    self.wallpaperView.alpha = (1 - progress)*1.2;
+
+    newFrame.origin.y = progress * self.wallpaperView.frame.size.height/4;
+  }
+
+  self.wallpaperView.frame = newFrame;
+
+  if (progress >= 0.7) {
+     [self.blurView setProgress:1];
+  } else {
+   [self.blurView setProgress:progress*(1/0.7)];
+  }
 }
 -(void)viewDidLayoutSubviews {
+
   SBFStaticWallpaperView *wallpaperView = [[objc_getClass("SBWallpaperController") sharedInstance] _wallpaperViewForVariant:0];
   self.wallpaperView.image = [wallpaperView.displayedImage copy];
-  self.wallpaperView.frame = self.view.bounds;
+
 }
 - (void)scrollViewDidScroll:(UIScrollView *)scrollView {
   CGRect screenBounds = [[UIScreen mainScreen] bounds];

@@ -11,8 +11,8 @@
   self.backdropView.frame = self.bounds;
 
   self.backdropSettings = [NSClassFromString(@"_UIBackdropViewSettings") settingsForStyle:-2];
-	self.backdropSettings.blurRadius = 30.0f;
-	self.backdropSettings.saturationDeltaFactor = 1.9f;
+	self.backdropSettings.blurRadius = 25.0f;
+	self.backdropSettings.saturationDeltaFactor = 2.4f;
 	self.backdropSettings.grayscaleTintAlpha = 0;
 	self.backdropSettings.colorTintAlpha = 0;
 	self.backdropSettings.grayscaleTintLevel = 0;
