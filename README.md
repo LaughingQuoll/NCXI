@@ -3,6 +3,12 @@ Source Code and Issue Tracker for NCXI
 
 Do not compile / install this yet it is not production ready.
 
+## TO DO 
+
+1. Fix bugged landscape mode.
+
+2. Fix wallpaper not adjusting to match scaling.
+
 Licence:
 
 1. No using the code in this repository for paid products.
